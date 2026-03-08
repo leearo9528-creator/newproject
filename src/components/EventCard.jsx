@@ -1,11 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { T } from '@/lib/design-tokens';
+import { getSupabase } from '@/lib/supabase';
 import Badge from '@/components/ui/Badge';
 import Card from '@/components/ui/Card';
 
 export default function EventCard({
+    eventId,
     name,
     location,
     date,
@@ -16,7 +19,29 @@ export default function EventCard({
     locked,
     onClick,
 }) {
+    const router = useRouter();
     const [liked, setLiked] = useState(false);
+
+    useEffect(() => {
+        if (!eventId) return;
+        const saved = JSON.parse(localStorage.getItem('liked_events') || '[]');
+        setLiked(saved.includes(String(eventId)));
+    }, [eventId]);
+
+    async function handleLike(e) {
+        e.stopPropagation();
+        const sb = getSupabase();
+        const { data: { user } } = await sb.auth.getUser();
+        if (!user) {
+            router.push('/login');
+            return;
+        }
+        const saved = JSON.parse(localStorage.getItem('liked_events') || '[]');
+        const id = String(eventId);
+        const updated = liked ? saved.filter((v) => v !== id) : [...saved, id];
+        localStorage.setItem('liked_events', JSON.stringify(updated));
+        setLiked(!liked);
+    }
 
     return (
         <Card onClick={onClick} style={{ cursor: 'pointer' }}>
@@ -36,10 +61,7 @@ export default function EventCard({
             >
                 🎪
                 <div
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        setLiked(!liked);
-                    }}
+                    onClick={handleLike}
                     style={{
                         position: 'absolute',
                         top: 10,
@@ -93,13 +115,7 @@ export default function EventCard({
                         리뷰 {reviewCount}개
                     </span>
                 </div>
-                <div
-                    style={{
-                        fontSize: 12,
-                        color: T.blue,
-                        fontWeight: 600,
-                    }}
-                >
+                <div style={{ fontSize: 12, color: T.blue, fontWeight: 600 }}>
                     상세 보기 →
                 </div>
             </div>

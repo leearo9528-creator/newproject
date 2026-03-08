@@ -63,6 +63,7 @@ export default function HomePage() {
         subtitle="안녕하세요 👋"
         action={
           <div style={{ display: 'flex', gap: 10 }}>
+            <Link href="/search">
             <div
               style={{
                 background: T.bg,
@@ -81,6 +82,7 @@ export default function HomePage() {
                 행사명, 지역으로 검색
               </span>
             </div>
+          </Link>
             <Link href="/events/register">
               <div
                 style={{
@@ -194,6 +196,7 @@ export default function HomePage() {
             {events.map((e) => (
               <EventCard
                 key={e.id}
+                eventId={e.id}
                 name={e.name}
                 location={`${e.location_sido || ''} ${e.location_sigungu || ''}`}
                 date={formatDate(e.date_start, e.date_end)}

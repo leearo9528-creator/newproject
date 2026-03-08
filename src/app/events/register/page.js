@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { T, FILTERS } from '@/lib/design-tokens';
 import { getSupabase } from '@/lib/supabase';
@@ -23,6 +23,15 @@ export default function EventRegisterPage() {
     const [loading, setLoading] = useState(false);
     const [submitted, setSubmitted] = useState(false);
     const [error, setError] = useState('');
+
+    useEffect(() => {
+        async function checkAuth() {
+            const sb = getSupabase();
+            const { data: { user } } = await sb.auth.getUser();
+            if (!user) router.replace('/login');
+        }
+        checkAuth();
+    }, []);
 
     const inputStyle = (hasValue) => ({
         width: '100%',

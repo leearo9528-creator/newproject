@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { T } from '@/lib/design-tokens';
 import { REVENUE_RANGES, FILTERS } from '@/lib/design-tokens';
@@ -13,6 +13,15 @@ function ReviewWriteInner() {
     const searchParams = useSearchParams();
     const eventId = searchParams.get('event');
     const eventName = searchParams.get('name') || '행사 리뷰';
+
+    useEffect(() => {
+        async function checkAuth() {
+            const sb = getSupabase();
+            const { data: { user } } = await sb.auth.getUser();
+            if (!user) router.replace('/login');
+        }
+        checkAuth();
+    }, []);
 
     const [boothType, setBoothType] = useState('seller');
     const [year, setYear] = useState('2025');
