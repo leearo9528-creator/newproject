@@ -13,6 +13,7 @@ export default function HomePage() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('전체');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     fetchEvents();
@@ -20,6 +21,7 @@ export default function HomePage() {
 
   async function fetchEvents() {
     setLoading(true);
+    setError('');
     const sb = getSupabase();
     let query = sb
       .from('events')
@@ -42,7 +44,11 @@ export default function HomePage() {
     }
 
     const { data, error } = await query.limit(20);
-    if (!error && data) setEvents(data);
+    if (error) {
+      setError('행사 목록을 불러오지 못했어요. 잠시 후 다시 시도해주세요.');
+    } else if (data) {
+      setEvents(data);
+    }
     setLoading(false);
   }
 
@@ -160,6 +166,14 @@ export default function HomePage() {
             </span>
           ))}
         </div>
+
+        {/* 에러 메시지 */}
+        {error && (
+          <div style={{
+            background: '#FFF0F0', color: '#E53E3E', borderRadius: 10,
+            padding: '12px 16px', fontSize: 13, fontWeight: 600, marginBottom: 16,
+          }}>⚠️ {error}</div>
+        )}
 
         {/* 행사 수 */}
         <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 16 }}>

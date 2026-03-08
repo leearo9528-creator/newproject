@@ -1,12 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { T } from '@/lib/design-tokens';
 import { REVENUE_RANGES, FILTERS } from '@/lib/design-tokens';
+import { getSupabase } from '@/lib/supabase';
 import TopBar from '@/components/ui/TopBar';
 import Card from '@/components/ui/Card';
 
 export default function ReviewWritePage() {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+
+    const eventId = searchParams.get('event');
+    const eventName = searchParams.get('name') || '행사 리뷰';
+
     const [boothType, setBoothType] = useState('seller');
     const [year, setYear] = useState('2025');
     const [month, setMonth] = useState('3');
@@ -22,6 +30,10 @@ export default function ReviewWritePage() {
     const [pros, setPros] = useState('');
     const [cons, setCons] = useState('');
     const [repurchase, setRepurchase] = useState(null);
+
+    const [submitting, setSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState('');
+    const [submitSuccess, setSubmitSuccess] = useState(false);
 
     const overall = r1 && r2 && r3 ? ((r1 + r2 + r3) / 3).toFixed(1) : null;
     const revenues = boothType === 'seller' ? REVENUE_RANGES.seller : REVENUE_RANGES.foodtruck;
@@ -39,11 +51,115 @@ export default function ReviewWritePage() {
         transition: 'border-color 0.15s',
     });
 
+    async function handleSubmit() {
+        setSubmitError('');
+
+        // 필수 항목 검증
+        if (!eventId) {
+            setSubmitError('행사 정보가 없어요. 행사 상세 페이지에서 리뷰를 작성해주세요.');
+            return;
+        }
+        if (!r1 || !r2 || !r3) {
+            setSubmitError('항목별 별점을 모두 선택해주세요.');
+            return;
+        }
+        if (!pros.trim()) {
+            setSubmitError('장점을 입력해주세요.');
+            return;
+        }
+        if (repurchase === null) {
+            setSubmitError('재참가 의향을 선택해주세요.');
+            return;
+        }
+
+        setSubmitting(true);
+
+        const sb = getSupabase();
+
+        // 로그인 상태 확인
+        const { data: { user }, error: authErr } = await sb.auth.getUser();
+        if (authErr || !user) {
+            setSubmitError('로그인이 필요해요. 로그인 후 다시 시도해주세요.');
+            setSubmitting(false);
+            return;
+        }
+
+        const reviewData = {
+            event_id: eventId,
+            user_id: user.id,
+            booth_type: boothType,
+            participated_year: parseInt(year),
+            participated_month: parseInt(month),
+            category: category || null,
+            category_private: catPrivate,
+            price_range: priceRange || null,
+            rating_visitors: r1,
+            rating_organizer: r2,
+            rating_atmosphere: r3,
+            overall_rating: parseFloat(overall),
+            buy_power: buyPower || null,
+            age_group: ageGroup || null,
+            revenue_range: revenue !== null ? revenues[revenue] : null,
+            pros: pros.trim(),
+            cons: cons.trim() || null,
+            repurchase_intent: repurchase,
+            is_approved: false,
+            is_deleted: false,
+        };
+
+        const { error } = await sb.from('reviews').insert(reviewData);
+
+        if (error) {
+            setSubmitError('리뷰 등록에 실패했어요. 잠시 후 다시 시도해주세요.');
+            setSubmitting(false);
+            return;
+        }
+
+        setSubmitSuccess(true);
+        setSubmitting(false);
+    }
+
+    if (submitSuccess) {
+        return (
+            <div style={{ minHeight: '100vh', background: T.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+                <div style={{ textAlign: 'center', maxWidth: 360 }}>
+                    <div style={{ fontSize: 64, marginBottom: 20 }}>🎉</div>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: T.text, marginBottom: 10 }}>리뷰가 등록됐어요!</div>
+                    <div style={{ fontSize: 14, color: T.gray, marginBottom: 32, lineHeight: 1.6 }}>
+                        검토 후 공개될 예정이에요.<br />소중한 리뷰 감사해요!
+                    </div>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                        <div
+                            onClick={() => router.back()}
+                            style={{
+                                flex: 1, padding: 14, borderRadius: T.radiusMd, cursor: 'pointer',
+                                border: `1px solid ${T.border}`, fontSize: 14, fontWeight: 600,
+                                color: T.gray, background: T.bg, textAlign: 'center',
+                            }}
+                        >
+                            돌아가기
+                        </div>
+                        <div
+                            onClick={() => router.push('/')}
+                            style={{
+                                flex: 1, padding: 14, borderRadius: T.radiusMd, cursor: 'pointer',
+                                background: T.blue, fontSize: 14, fontWeight: 700,
+                                color: '#fff', textAlign: 'center',
+                            }}
+                        >
+                            홈으로
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div style={{ minHeight: '100vh', background: T.bg }}>
             <TopBar
                 title="리뷰 작성"
-                subtitle="✍️ 성수 플리마켓 2025"
+                subtitle={`✍️ ${eventName}`}
                 hasBack
                 onBack={() => window.history.back()}
                 action={
@@ -64,24 +180,34 @@ export default function ReviewWritePage() {
                             취소
                         </button>
                         <button
+                            onClick={handleSubmit}
+                            disabled={submitting}
                             style={{
                                 padding: '10px 20px',
                                 borderRadius: T.radiusMd,
-                                background: T.blue,
+                                background: submitting ? T.gray : T.blue,
                                 fontSize: 14,
                                 fontWeight: 700,
                                 color: '#fff',
-                                cursor: 'pointer',
+                                cursor: submitting ? 'default' : 'pointer',
                                 border: 'none',
                             }}
                         >
-                            등록하기
+                            {submitting ? '등록 중...' : '등록하기'}
                         </button>
                     </div>
                 }
             />
 
             <div className="page-padding">
+                {/* 에러 메시지 */}
+                {submitError && (
+                    <div style={{
+                        background: '#FFF0F0', color: '#E53E3E', borderRadius: 10,
+                        padding: '12px 16px', fontSize: 13, fontWeight: 600, marginBottom: 16,
+                    }}>⚠️ {submitError}</div>
+                )}
+
                 <div className="review-write-grid" style={{ display: 'grid', gap: 24, alignItems: 'start' }}>
                     {/* 메인 폼 */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -155,7 +281,9 @@ export default function ReviewWritePage() {
                         {/* 항목별 별점 */}
                         <Card>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                                <div style={{ fontSize: 15, fontWeight: 700, color: T.text }}>항목별 별점</div>
+                                <div style={{ fontSize: 15, fontWeight: 700, color: T.text }}>
+                                    항목별 별점 <span style={{ fontSize: 12, color: T.red, fontWeight: 400 }}>*필수</span>
+                                </div>
                                 {overall && (
                                     <div style={{ background: T.blueLt, borderRadius: 10, padding: '6px 14px', fontSize: 13, fontWeight: 700, color: T.blue }}>
                                         종합 ★ {overall}
@@ -234,7 +362,7 @@ export default function ReviewWritePage() {
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                                 <div>
                                     <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 8 }}>
-                                        👍 장점 <span style={{ fontSize: 12, color: T.green, fontWeight: 400 }}>전체 공개</span>
+                                        👍 장점 <span style={{ fontSize: 12, color: T.red, fontWeight: 400 }}>*필수</span>
                                     </div>
                                     <textarea value={pros} onChange={(e) => setPros(e.target.value)}
                                         placeholder="이 행사의 좋았던 점을 알려주세요" rows={4}
@@ -253,7 +381,9 @@ export default function ReviewWritePage() {
 
                         {/* 재참가 의향 */}
                         <Card>
-                            <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 14 }}>재참가 의향</div>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 14 }}>
+                                재참가 의향 <span style={{ fontSize: 12, color: T.red, fontWeight: 400 }}>*필수</span>
+                            </div>
                             <div style={{ display: 'flex', gap: 10 }}>
                                 {[[true, '✅ 다시 참가할게요'], [false, '❌ 다음엔 다른 곳으로']].map(([v, l]) => (
                                     <div key={String(v)} onClick={() => setRepurchase(v)} style={{
@@ -295,11 +425,16 @@ export default function ReviewWritePage() {
                                     <span style={{ fontWeight: 600, color: v === '-' ? T.border : T.text }}>{v}</span>
                                 </div>
                             ))}
-                            <div style={{
-                                marginTop: 16, background: T.blue, borderRadius: T.radiusMd,
-                                padding: 14, textAlign: 'center', color: '#fff', fontSize: 14,
-                                fontWeight: 700, cursor: 'pointer',
-                            }}>등록하기</div>
+                            <div
+                                onClick={handleSubmit}
+                                style={{
+                                    marginTop: 16, background: submitting ? T.gray : T.blue, borderRadius: T.radiusMd,
+                                    padding: 14, textAlign: 'center', color: '#fff', fontSize: 14,
+                                    fontWeight: 700, cursor: submitting ? 'default' : 'pointer',
+                                }}
+                            >
+                                {submitting ? '등록 중...' : '등록하기'}
+                            </div>
                         </Card>
                     </div>
                 </div>

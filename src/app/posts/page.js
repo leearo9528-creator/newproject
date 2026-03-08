@@ -11,6 +11,7 @@ export default function PostListPage() {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('전체');
+    const [error, setError] = useState('');
 
     useEffect(() => {
         fetchPosts();
@@ -18,6 +19,7 @@ export default function PostListPage() {
 
     async function fetchPosts() {
         setLoading(true);
+        setError('');
         const sb = getSupabase();
         let query = sb
             .from('posts')
@@ -31,7 +33,11 @@ export default function PostListPage() {
         if (filter === '푸드트럭') query = query.eq('recruitment_type', '푸드트럭');
 
         const { data, error } = await query.limit(20);
-        if (!error && data) setPosts(data);
+        if (error) {
+            setError('공고 목록을 불러오지 못했어요. 잠시 후 다시 시도해주세요.');
+        } else if (data) {
+            setPosts(data);
+        }
         setLoading(false);
     }
 
@@ -46,6 +52,13 @@ export default function PostListPage() {
                             onClick={() => setFilter(f)}>{f}</span>
                     ))}
                 </div>
+
+                {error && (
+                    <div style={{
+                        background: '#FFF0F0', color: '#E53E3E', borderRadius: 10,
+                        padding: '12px 16px', fontSize: 13, fontWeight: 600, marginBottom: 16,
+                    }}>⚠️ {error}</div>
+                )}
 
                 <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 16 }}>
                     {loading ? '로딩 중...' : (

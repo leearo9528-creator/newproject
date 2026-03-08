@@ -17,25 +17,32 @@ export default function EventDetailPage() {
     const [tab, setTab] = useState('리뷰');
     const [liked, setLiked] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
 
     useEffect(() => {
         if (params?.id) fetchData();
     }, [params?.id]);
 
     async function fetchData() {
+        setError('');
         const sb = getSupabase();
 
         // 행사 데이터
-        const { data: ev } = await sb
+        const { data: ev, error: evErr } = await sb
             .from('events')
             .select('*')
             .eq('id', params.id)
             .single();
 
+        if (evErr) {
+            setError('행사 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.');
+            setLoading(false);
+            return;
+        }
         if (ev) setEvent(ev);
 
         // 승인된 리뷰
-        const { data: rvs } = await sb
+        const { data: rvs, error: rvsErr } = await sb
             .from('reviews')
             .select('*, users(nickname, is_verified)')
             .eq('event_id', params.id)
@@ -43,7 +50,11 @@ export default function EventDetailPage() {
             .eq('is_deleted', false)
             .order('created_at', { ascending: false });
 
-        if (rvs) setReviews(rvs);
+        if (rvsErr) {
+            setError('리뷰를 불러오지 못했어요. 잠시 후 다시 시도해주세요.');
+        } else if (rvs) {
+            setReviews(rvs);
+        }
         setLoading(false);
     }
 
@@ -109,6 +120,12 @@ export default function EventDetailPage() {
             />
 
             <div className="page-padding">
+                {error && (
+                    <div style={{
+                        background: '#FFF0F0', color: '#E53E3E', borderRadius: 10,
+                        padding: '12px 16px', fontSize: 13, fontWeight: 600, marginBottom: 16,
+                    }}>⚠️ {error}</div>
+                )}
                 <div>
                     {/* 행사 기본 정보 */}
                     <Card style={{ marginBottom: 16 }} className="animate-fade-in">
