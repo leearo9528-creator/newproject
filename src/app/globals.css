@@ -1,33 +1,58 @@
+/* ═══════════════════════════════════════════ */
+/* 플리(Fli) — Global Styles                  */
+/* ═══════════════════════════════════════════ */
+
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
+
+/* ─── CSS Variables ─── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --blue: #3182F6;
+  --blue-dark: #1B64DA;
+  --blue-lt: #EBF3FF;
+  --green: #00C471;
+  --green-lt: #E6F7F0;
+  --red: #F04452;
+  --red-lt: #FEE8EA;
+  --yellow: #FF9500;
+  --yellow-lt: #FFF3E0;
+  --text: #191F28;
+  --text-sub: #4E5968;
+  --gray: #8B95A1;
+  --gray-lt: #F2F4F6;
+  --bg: #F5F6F8;
+  --border: #E5E8EB;
+  --white: #FFFFFF;
+  --sidebar-w: 240px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ─── Reset & Base ─── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
+body {
+  font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont,
+    'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  line-height: 1.5;
+  font-size: 14px;
 }
 
 a {
@@ -35,8 +60,145 @@ a {
   text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
+button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+input, textarea, select {
+  font: inherit;
+  color: inherit;
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gray);
+}
+
+/* ─── Layout ─── */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  min-height: 100vh;
+}
+
+/* PC: 사이드바가 있을 때 */
+@media (min-width: 769px) {
+  .main-content {
+    margin-left: var(--sidebar-w);
   }
+  .mobile-only {
+    display: none !important;
+  }
+}
+
+/* 모바일 */
+@media (max-width: 768px) {
+  .desktop-only {
+    display: none !important;
+  }
+  .main-content {
+    margin-left: 0;
+    padding-bottom: 72px; /* BottomNav 공간 */
+  }
+}
+
+/* ─── Utility ─── */
+.page-padding {
+  padding: 28px 36px;
+}
+
+@media (max-width: 768px) {
+  .page-padding {
+    padding: 16px;
+  }
+}
+
+.grid-events {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1024px) {
+  .grid-events {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .grid-events {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─── Filter Chips ─── */
+.filter-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.filter-chip {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--gray);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.filter-chip:hover {
+  border-color: var(--gray);
+}
+
+.filter-chip.active {
+  background: var(--text);
+  color: var(--white);
+  border-color: var(--text);
+}
+
+/* ─── Animations ─── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease-out;
 }
