@@ -274,7 +274,15 @@ function ReviewWriteInner() {
                                             {eventSearching ? (
                                                 <div style={{ padding: '14px 16px', fontSize: 13, color: T.gray }}>검색 중...</div>
                                             ) : eventResults.length === 0 ? (
-                                                <div style={{ padding: '14px 16px', fontSize: 13, color: T.gray }}>검색 결과가 없어요</div>
+                                                <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <span style={{ fontSize: 13, color: T.gray }}>검색 결과가 없어요</span>
+                                                    <span
+                                                        onClick={() => router.push(`/events/register?name=${encodeURIComponent(eventSearch)}`)}
+                                                        style={{ fontSize: 13, fontWeight: 700, color: T.blue, cursor: 'pointer' }}
+                                                    >
+                                                        + 행사 등록하기
+                                                    </span>
+                                                </div>
                                             ) : eventResults.map((ev, i) => (
                                                 <div
                                                     key={ev.id}

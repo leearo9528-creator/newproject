@@ -1,15 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { T, FILTERS } from '@/lib/design-tokens';
 import { getSupabase } from '@/lib/supabase';
 import TopBar from '@/components/ui/TopBar';
 import Card from '@/components/ui/Card';
 
-export default function EventRegisterPage() {
+function EventRegisterInner() {
     const router = useRouter();
-    const [name, setName] = useState('');
+    const searchParams = useSearchParams();
+    const [name, setName] = useState(searchParams.get('name') || '');
     const [organizer, setOrganizer] = useState('');
     const [recruitmentType, setRecruitmentType] = useState('플리마켓');
     const [locationSido, setLocationSido] = useState('');
@@ -334,5 +335,17 @@ export default function EventRegisterPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function EventRegisterPage() {
+    return (
+        <Suspense fallback={
+            <div style={{ minHeight: "100vh", background: "#F5F6F8", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ color: "#8B95A1" }}>로딩 중...</div>
+            </div>
+        }>
+            <EventRegisterInner />
+        </Suspense>
     );
 }
