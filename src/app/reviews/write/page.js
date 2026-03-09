@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { T } from '@/lib/design-tokens';
 import { REVENUE_RANGES, FILTERS } from '@/lib/design-tokens';
@@ -11,8 +11,13 @@ import Card from '@/components/ui/Card';
 function ReviewWriteInner() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const eventId = searchParams.get('event');
-    const eventName = searchParams.get('name') || '행사 리뷰';
+    const [eventId, setEventId] = useState(searchParams.get('event') || null);
+    const [eventName, setEventName] = useState(searchParams.get('name') || '');
+    const [eventSearch, setEventSearch] = useState('');
+    const [eventResults, setEventResults] = useState([]);
+    const [eventSearching, setEventSearching] = useState(false);
+    const [showDropdown, setShowDropdown] = useState(false);
+    const searchRef = useRef(null);
 
     useEffect(() => {
         async function checkAuth() {
@@ -21,6 +26,36 @@ function ReviewWriteInner() {
             if (!user) router.replace('/login');
         }
         checkAuth();
+    }, []);
+
+    useEffect(() => {
+        const q = eventSearch.trim();
+        if (!q) { setEventResults([]); return; }
+        const timer = setTimeout(async () => {
+            setEventSearching(true);
+            const sb = getSupabase();
+            const { data } = await sb
+                .from('events')
+                .select('id, name, location_sido, location_sigungu, start_date')
+                .eq('is_approved', true)
+                .eq('is_deleted', false)
+                .or(`name.ilike.%${q}%,location_sido.ilike.%${q}%,location_sigungu.ilike.%${q}%`)
+                .order('start_date', { ascending: false })
+                .limit(10);
+            setEventResults(data || []);
+            setEventSearching(false);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [eventSearch]);
+
+    useEffect(() => {
+        function handleClick(e) {
+            if (searchRef.current && !searchRef.current.contains(e.target)) {
+                setShowDropdown(false);
+            }
+        }
+        document.addEventListener('mousedown', handleClick);
+        return () => document.removeEventListener('mousedown', handleClick);
     }, []);
 
     const [boothType, setBoothType] = useState('seller');
@@ -144,7 +179,7 @@ function ReviewWriteInner() {
         <div style={{ minHeight: '100vh', background: T.bg }}>
             <TopBar
                 title="리뷰 작성"
-                subtitle={`✍️ ${eventName}`}
+                subtitle={eventName ? `✍️ ${eventName}` : '✍️ 행사를 선택해주세요'}
                 hasBack
                 onBack={() => router.back()}
                 action={
@@ -195,6 +230,81 @@ function ReviewWriteInner() {
                 <div className="review-write-grid" style={{ display: 'grid', gap: 24, alignItems: 'start' }}>
                     {/* 메인 폼 */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                        {/* 행사 선택 */}
+                        <Card>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 14 }}>
+                                🎪 어떤 행사에 참가하셨나요?
+                            </div>
+                            {eventId && eventName ? (
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                                    <div style={{
+                                        flex: 1, padding: '12px 16px', borderRadius: T.radiusMd,
+                                        background: T.blueLt, border: `1.5px solid ${T.blue}`,
+                                        fontSize: 14, fontWeight: 700, color: T.blue,
+                                    }}>
+                                        ✅ {eventName}
+                                    </div>
+                                    <button
+                                        onClick={() => { setEventId(null); setEventName(''); setEventSearch(''); }}
+                                        style={{
+                                            padding: '10px 14px', borderRadius: T.radiusMd, fontSize: 13,
+                                            fontWeight: 600, border: `1px solid ${T.border}`,
+                                            background: T.bg, color: T.gray, cursor: 'pointer', whiteSpace: 'nowrap',
+                                        }}
+                                    >
+                                        변경
+                                    </button>
+                                </div>
+                            ) : (
+                                <div ref={searchRef} style={{ position: 'relative' }}>
+                                    <input
+                                        value={eventSearch}
+                                        onChange={(e) => { setEventSearch(e.target.value); setShowDropdown(true); }}
+                                        onFocus={() => setShowDropdown(true)}
+                                        placeholder="행사명 또는 지역으로 검색..."
+                                        style={inputStyle(eventSearch)}
+                                    />
+                                    {showDropdown && (eventSearching || eventResults.length > 0 || eventSearch.trim()) && (
+                                        <div style={{
+                                            position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
+                                            background: T.white, border: `1.5px solid ${T.border}`,
+                                            borderRadius: T.radiusMd, boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                                            marginTop: 4, overflow: 'hidden',
+                                        }}>
+                                            {eventSearching ? (
+                                                <div style={{ padding: '14px 16px', fontSize: 13, color: T.gray }}>검색 중...</div>
+                                            ) : eventResults.length === 0 ? (
+                                                <div style={{ padding: '14px 16px', fontSize: 13, color: T.gray }}>검색 결과가 없어요</div>
+                                            ) : eventResults.map((ev, i) => (
+                                                <div
+                                                    key={ev.id}
+                                                    onClick={() => {
+                                                        setEventId(ev.id);
+                                                        setEventName(ev.name);
+                                                        setEventSearch('');
+                                                        setShowDropdown(false);
+                                                    }}
+                                                    style={{
+                                                        padding: '12px 16px', cursor: 'pointer',
+                                                        borderBottom: i < eventResults.length - 1 ? `1px solid ${T.border}` : 'none',
+                                                        transition: 'background 0.1s',
+                                                    }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.background = T.bg}
+                                                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                                >
+                                                    <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 3 }}>{ev.name}</div>
+                                                    <div style={{ fontSize: 12, color: T.gray }}>
+                                                        {[ev.location_sido, ev.location_sigungu].filter(Boolean).join(' ')}
+                                                        {ev.start_date && ` · ${new Date(ev.start_date).getFullYear()}년 ${new Date(ev.start_date).getMonth() + 1}월`}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </Card>
+
                         {/* 참가 유형 */}
                         <Card>
                             <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 14 }}>참가 유형</div>
@@ -384,6 +494,7 @@ function ReviewWriteInner() {
                         <Card>
                             <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 16 }}>📋 작성 현황</div>
                             {[
+                                ['행사', eventName || '-'],
                                 ['참가 유형', boothType === 'seller' ? '일반 셀러' : '푸드트럭'],
                                 ['참가 시기', `${year}년 ${month}월`],
                                 ['판매 품목', category || '-'],
