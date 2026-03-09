@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { T } from '@/lib/design-tokens';
 import { REVENUE_RANGES } from '@/lib/design-tokens';
 import { getSupabase } from '@/lib/supabase';
@@ -17,6 +17,7 @@ export default function EventDetailPage() {
     const [tab, setTab] = useState('리뷰');
     const [liked, setLiked] = useState(false);
     const [loading, setLoading] = useState(true);
+    const router = useRouter();
 
     useEffect(() => {
         if (params?.id) fetchData();
@@ -32,7 +33,11 @@ export default function EventDetailPage() {
             .eq('id', params.id)
             .single();
 
-        if (ev) setEvent(ev);
+        if (ev) {
+            setEvent(ev);
+            const saved = JSON.parse(localStorage.getItem('liked_events') || '[]');
+            setLiked(saved.includes(String(params.id)));
+        }
 
         // 승인된 리뷰
         const { data: rvs } = await sb
@@ -88,7 +93,15 @@ export default function EventDetailPage() {
                 onBack={() => window.history.back()}
                 action={
                     <div style={{ display: 'flex', gap: 8 }}>
-                        <div onClick={() => setLiked(!liked)} style={{
+                        <div onClick={async () => {
+                            const { data: { user } } = await getSupabase().auth.getUser();
+                            if (!user) { router.push('/login'); return; }
+                            const saved = JSON.parse(localStorage.getItem('liked_events') || '[]');
+                            const id = String(e.id);
+                            const updated = liked ? saved.filter((v) => v !== id) : [...saved, id];
+                            localStorage.setItem('liked_events', JSON.stringify(updated));
+                            setLiked(!liked);
+                        }} style={{
                             width: 38, height: 38, borderRadius: 10,
                             background: liked ? '#FFF0F0' : T.bg,
                             border: `1px solid ${T.border}`,
