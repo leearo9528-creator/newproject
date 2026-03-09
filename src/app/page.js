@@ -58,50 +58,56 @@ export default function HomePage() {
 
   return (
     <>
-      <TopBar
-        title="어떤 행사 찾으세요?"
-        subtitle="안녕하세요 👋"
-        action={
-          <div style={{ display: 'flex', gap: 10 }}>
-            <Link href="/search">
-            <div
-              style={{
-                background: T.bg,
-                borderRadius: T.radiusMd,
-                padding: '10px 18px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                border: `1px solid ${T.border}`,
-                width: 260,
-                cursor: 'pointer',
-              }}
-            >
-              <span style={{ fontSize: 15 }}>🔍</span>
-              <span style={{ fontSize: 14, color: '#C4C9D1' }}>
-                행사명, 지역으로 검색
-              </span>
+      {/* 홈 전용 헤더 */}
+      <div style={{
+        background: T.white,
+        borderBottom: `1px solid ${T.border}`,
+        padding: '18px 20px 14px',
+        position: 'sticky',
+        top: 0,
+        zIndex: 10,
+      }}>
+        {/* 1행: 인사 + 제보 버튼 */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+          <div>
+            <div style={{ fontSize: 13, color: T.gray, marginBottom: 3 }}>안녕하세요 👋</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: T.text, letterSpacing: -0.5, lineHeight: 1.3 }}>
+              어떤 행사의 매출이<br />궁금하신가요?
+            </div>
+          </div>
+          <Link href="/events/register">
+            <div style={{
+              background: T.blue,
+              borderRadius: T.radiusMd,
+              padding: '9px 14px',
+              fontSize: 13,
+              fontWeight: 700,
+              color: '#fff',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              marginTop: 2,
+            }}>
+              + 행사 제보
             </div>
           </Link>
-            <Link href="/events/register">
-              <div
-                style={{
-                  background: T.blue,
-                  borderRadius: T.radiusMd,
-                  padding: '10px 18px',
-                  fontSize: 14,
-                  fontWeight: 700,
-                  color: '#fff',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                + 행사 제보
-              </div>
-            </Link>
+        </div>
+        {/* 2행: 검색창 */}
+        <Link href="/search">
+          <div style={{
+            background: T.bg,
+            borderRadius: T.radiusMd,
+            padding: '11px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            border: `1px solid ${T.border}`,
+            cursor: 'pointer',
+          }}>
+            <span style={{ fontSize: 15 }}>🔍</span>
+            <span style={{ fontSize: 14, color: '#C4C9D1' }}>행사명, 지역으로 검색</span>
           </div>
-        }
-      />
+        </Link>
+      </div>
 
       <div className="page-padding">
         {/* 프로모션 배너 */}
